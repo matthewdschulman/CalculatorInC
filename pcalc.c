@@ -2,10 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#import <netinet/in.h>
+
 int isNumeric (const char * s);
+/*int pop (struct node **item, int *p);
+void push(struct node** item, int data);*/
 
 int main ( int argc, char *argv[] )
 {
+
 	//check that the user input is correct
     if ( argc != 2 ) /* argc should be 2 */
     {
@@ -15,8 +20,16 @@ int main ( int argc, char *argv[] )
 
     else 
     {
-    	//assume no command will be longer than 100 digits long
-    	char curStr[100];
+    	struct struct_of_ints {
+			int value ;
+			struct struct_of_ints *next ;
+		} ;
+
+		// allocate 1 element list to represent the stack of calculator ints
+		struct struct_of_ints *stackOfInts = 
+			malloc (sizeof (struct struct_of_ints) ) ;
+
+		char curStr[100];
         // Open up the user's selected input file
         FILE *file = fopen(argv[1], "r");
 
@@ -45,15 +58,38 @@ int main ( int argc, char *argv[] )
 				int checkIfInt = isNumeric(curStr);
             	int curIntIfInt = atoi(curStr);
             	if (checkIfInt != 0) {
-            		printf("Is an int: %d\n", curIntIfInt);
+            		//push on to top of stack (i.e. front of linked list)
+            		//create new with the current value
+            		//function call: pushToFrontOfStack(struct_of_ints, curIntIfInt);
+            		//first check if the list is empty
+            		if (!stackOfInts->value) {
+						//list is empty
+						stackOfInts->value = curIntIfInt;
+						stackOfInts->next = NULL;
+					}
+					else {
+						//list has elements. add cur int to front of linked list
+						struct struct_of_ints *curNode = 
+							malloc (sizeof (struct struct_of_ints) ) ;
+						curNode->value = curIntIfInt;
+						curNode->next = stackOfInts;
+						stackOfInts = curNode;
+					}
+
+            		printf("Is an int: %d\n", curIntIfInt);            		
             	}
             }
             fclose( file );
+            printf ("stackOfInts[0]=%d\n", stackOfInts->value ) ;
+			printf ("stackOfInts[1]=%d\n", stackOfInts->next->value ) ;
+			printf ("stackOfInts[2]=%d\n", stackOfInts->next->next->value ) ;
+			printf ("stackOfInts[3]=%d\n", stackOfInts->next->next->next->value ) ;
+			printf ("stackOfInts[4]=%d\n", stackOfInts->next->next->next->next->value ) ;
         }
     }
 }
 
-
+//void pushToFrontOfStack(struct struct_of_ints)
 
 int isNumeric (const char * s)
 {
