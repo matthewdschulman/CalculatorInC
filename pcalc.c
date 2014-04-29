@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+int isNumeric (const char * s);
 
 int main ( int argc, char *argv[] )
 {
@@ -26,12 +29,37 @@ int main ( int argc, char *argv[] )
             // read in strings
             while  ((fgets(curStr, 100, file)) != NULL )
             {
+            	//truncate the curStr to remove spaces             	
+				int i = 0;
+				int j = strlen ( curStr ) - 1;
+				int k = 0;				 
+				while ( isspace ( curStr[i] ) && curStr[i] != '\0' )
+				    i++;				 
+				while ( isspace ( curStr[j] ) && j >= 0 )
+				    j--;				 
+				while ( i <= j )
+				    curStr[k++] = curStr[i++];				 
+				curStr[k] = '\0';
+
+				//check if the curStr is numeric
+				int checkIfInt = isNumeric(curStr);
             	int curIntIfInt = atoi(curStr);
-            	if (curIntIfInt != 0) {
-            		printf("%d", curIntIfInt);
+            	if (checkIfInt != 0) {
+            		printf("Is an int: %d\n", curIntIfInt);
             	}
             }
             fclose( file );
         }
     }
+}
+
+
+
+int isNumeric (const char * s)
+{
+    if (s == NULL || *s == '\0' || isspace(*s))
+      return 0;
+    char * p;
+    strtod (s, &p);
+    return *p == '\0';
 }
