@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 int main () {
-
 	struct struct_of_ints {
 		int value ;
 		struct struct_of_ints *next ;
