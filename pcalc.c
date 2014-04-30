@@ -45,6 +45,7 @@ int getValueToTest(char * regis);
 int findLabelCounter(char *labelName, command_table *hashtable);
 int jmprInstr(char *reg, command_table *hashtable);
 int jsrInstr(char *reg, command_table *hashtable, FILE *outputFileName);
+char * getCurInstruction(command_table *hashtable, int programCounter);
 
 //PC
 int programCounter = 0;
@@ -83,8 +84,8 @@ int main ( int argc, char *argv[] )
 		load_commands (command_table_hash, argv[1]) ;
 		print_table (command_table_hash) ;
 		run_through_commands (command_table_hash, outputFile);
-		//int testFindLabelCounterFunction = findLabelCounter("TEST", command_table_hash);
-		//printf("testFindLabelCounterFunction should be 1... = %d",testFindLabelCounterFunction);
+		int testFindLabelCounterFunction = findLabelCounter("TWO", command_table_hash);
+		printf("testFindLabelCounterFunction should be 1... = %d",testFindLabelCounterFunction);
 		intStack *current;
 		current = stackOfInts;
 	    while (current != NULL) {
@@ -104,6 +105,7 @@ void print_table (command_table *hashtable) {
 		if (tmp_cmnd != NULL) {
 			printf ("bucket[%02d]=", i) ;
 			while (tmp_cmnd != NULL) {
+				printf("CurLine = %s\n", tmp_cmnd->instruction);
 				printf ("%s", tmp_cmnd->instruction ) ;
 				tmp_cmnd = tmp_cmnd->next ;
 				if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
@@ -113,12 +115,52 @@ void print_table (command_table *hashtable) {
 	}
 }
 
+char * getCurInstruction(command_table *hashtable, int programCounter) {
+	int i = 0 ;
+	command *tmp_cmnd = NULL ;
+
+	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+
+		if (tmp_cmnd != NULL) {
+			printf ("bucket[%02d]=", i) ;
+			while (tmp_cmnd != NULL) {
+				//printf("CurLine = %s\n", tmp_cmnd->instruction);
+				printf ("%s", tmp_cmnd->instruction ) ;
+				tmp_cmnd = tmp_cmnd->next ;
+				if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
+
+			}
+		}
+	}
+
+	char *returnInstruction;
+	returnInstruction = "SAMPLE";
+
+	/*for (i=0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+
+		if (tmp_cmnd != NULL) {
+			printf ("bucket[%02d]=", i) ;
+			while (tmp_cmnd != NULL) {
+				strcpy (returnInstruction, tmp_cmnd->instruction ) ;
+				tmp_cmnd = tmp_cmnd->next ;
+				if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
+			}
+		}
+	}*/
+	return returnInstruction;
+}
+
 void run_through_commands (command_table *hashtable, FILE *outputFileName) {
+	//print_table(hashtable);
 	command *tmp_cmnd = NULL ;
 	//1 if there's a jump ocurring, 0 otherwise
 	int isJumping = 0;
+	char *curInstruction;
 
 	while (programCounter < (bucketCounter)) {
+		curInstruction = getCurInstruction(hashtable, programCounter);
 		//printf("bucketCounter = %d\n",bucketCounter);
 		isJumping = 0;
 		tmp_cmnd = hashtable->table[programCounter] ;
@@ -128,7 +170,7 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 			isJumping = 0;
 			while (tmp_cmnd != NULL) {
 
-				//split instruction and append tokens to 'res' */
+				//split instruction and append tokens to 'res' 
 				char ** res  = NULL;
 				char *  p    = strtok (tmp_cmnd->instruction, " ");
 				int n_spaces = 0, i;			
@@ -137,19 +179,21 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 				    res = realloc (res, sizeof (char*) * ++n_spaces);
 
 				    if (res == NULL)
-				        exit (-1); /* memory allocation failed */
+				        exit (-1); // memory allocation failed 
 
 				    res[n_spaces-1] = p;
 
 				    p = strtok (NULL, " ");
 				}
 
-				/* realloc one extra element for the last NULL */
+				 //realloc one extra element for the last NULL 
 
 				res = realloc (res, sizeof (char*) * (n_spaces+1));
 				res[n_spaces] = 0;
 
-				/* conduct the commands*/
+				// conduct the commands
+				
+				printf("right before for loop. PC = %d. instruction = %s\n",programCounter, curInstruction);
 
 				for (i = 0; i < (n_spaces+1); ++i) {
 					if (i == 0) {
@@ -185,9 +229,10 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 							modInstr();
 						}
 						else if (strcmp(res[i],"BRANCHp") == 0) {
+							//print_table(hashtable);
 							isJumping = 1;
 							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
-							printf("Program Counter post-jump = %d",programCounter);
+							//printf("Program Counter post-jump = %d",programCounter);
 						}
 						else if (strcmp(res[i],"BRANCHn") == 0) {
 							isJumping = 1;
@@ -517,7 +562,7 @@ int getValueToTest(char * regis) {
 }
 
 int branchPInstr(char *testReg, char *labelName, command_table *hashtable) {
-	printf("Here");
+	//printf("Here");
 	//get the register (first 2 chars of reg)
 	char regis[3];
 	strncpy(regis, testReg, 2);
@@ -694,12 +739,75 @@ int jmprInstr(char *reg, command_table *hashtable) {
 	return valueToTest;	
 }
 
+/*void print_table (command_table *hashtable) {
+	int i = 0 ;
+	command *tmp_cmnd = NULL ;
+
+	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+
+		if (tmp_cmnd != NULL) {
+			printf ("bucket[%02d]=", i) ;
+			while (tmp_cmnd != NULL) {
+				printf ("%s", tmp_cmnd->instruction ) ;
+				tmp_cmnd = tmp_cmnd->next ;
+				if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
+
+			}
+		}
+	}
+}*/
 
 int findLabelCounter(char *labelName, command_table *hashtable) {
-	/*command *tmp_cmnd = NULL ;
-	for (int i = 0; i < hashtable->num_of_buckets; i++) {
-		tmp_cmnd = hashtable->table[programCounter] ;
-		printf("tmp_cmnd->instruction = %s",tmp_cmnd->instruction);
+	/*char fullCurInstr[100];
+	
+	strcpy (outputFileName,argv[1]);
+	strcat (outputFileName,".out");	
+	command *tmp_cmnd = NULL ;
+
+	for (int i = 0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+
+		if (tmp_cmnd != NULL) {
+			while (tmp_cmnd != NULL) {
+				printf("test. current = %s\n", tmp_cmnd->instruction);
+				strcpy (fullCurInstr, tmp_cmnd->instruction ) ;
+				tmp_cmnd = tmp_cmnd->next ;
+				if (tmp_cmnd == NULL) break ;
+			}
+		}
+	}
+	printf("Made it here\n");
+	printf("fullCurInstr = %s",fullCurInstr);*/
+	/*int i = 0 ;
+	command *tmp_cmnd = NULL ;
+
+	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+
+		if (tmp_cmnd != NULL) {
+			printf ("bucket[%02d]=", i) ;
+			while (tmp_cmnd != NULL) {
+				printf ("%s", tmp_cmnd->instruction ) ;
+				tmp_cmnd = tmp_cmnd->next ;
+				if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
+
+			}
+		}
+	}*/
+	printf("In findLabelCounter. labelName = %s\n",labelName);
+	//print_table(hashtable);
+	return 1;
+	/*int i = 0 ;
+	command *tmp_cmnd = NULL ;
+	for (i = 0; i < hashtable->num_of_buckets; i++) {
+		printf("702\n");
+		tmp_cmnd = hashtable->table[i] ;
+		printf("tmp_cmnd->instruction = %s\n",tmp_cmnd->instruction);
+		printf("704\n");
+		
+		printf("706\n");
+
 		if (tmp_cmnd != NULL) {
 			while (tmp_cmnd != NULL) {
 				//split instruction and append tokens to 'res'
@@ -722,6 +830,7 @@ int findLabelCounter(char *labelName, command_table *hashtable) {
 
 				res = realloc (res, sizeof (char*) * (n_spaces+1));
 				res[n_spaces] = 0;
+				printf("Probs gonna mess up here\n");
 				printf("labelName = %s and res[1] = %s",labelName, res[1]);
 				if (strcmp(res[1],labelName) == 0 ) {				
 					free (res);
@@ -731,8 +840,8 @@ int findLabelCounter(char *labelName, command_table *hashtable) {
 			}
 		}
 	}
-	return -1;*/
-	return 1;
+	printf("Error: did not find the label in findLabelCounter\n");
+	exit(0);*/
 }
 
 
