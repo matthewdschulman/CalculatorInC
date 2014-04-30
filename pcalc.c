@@ -59,8 +59,6 @@ int main ( int argc, char *argv[] )
 		run_through_commands (command_table_hash);
 		//print the table for testing purposes
 		print_table (command_table_hash) ;
-		printf("R1 = %d",R1);
-		printf("R2 = %d",R2);
 	}
 }
 
