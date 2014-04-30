@@ -39,6 +39,7 @@ int main ( int argc, char *argv[] )
     {
     	//error...
     	printf("Error with the user input. Try again. Make sure to have one command line argument.");
+    	exit(0);
     }
 
     else 
@@ -180,6 +181,7 @@ void constInstr(char *reg, char *val, int n_spaces) {
 	}
 	else {
 		printf("Error with the CONST syntax of the input file\n");
+		exit(0);
 	}
 }
 
@@ -218,6 +220,7 @@ void pushInstr(char *reg) {
 	}
 	else {
 		printf("Error with the PUSH instruction for %s\n", reg);
+		exit(0);
 	}
 	//push res[i+1] to front of stack
 	//create new node with the current value
@@ -281,10 +284,16 @@ void popInstr(char *destReg) {
 	}
 	else {
 		printf("Error with the POP instruction for %s\n", destReg);
+		exit(0);
 	}
 }
 
 void printnumInstr(FILE *outputFile) {
+	//first check if the stack is empty
+	if (!stackOfInts->value) {
+		printf("Error: There are no integers on the stack, and printnumInstr was called\n");
+		exit(0);
+	}
 	fprintf(outputFile, "%d\n", stackOfInts->value);
 	printf("%d\n",stackOfInts->value);
 }
