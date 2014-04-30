@@ -35,6 +35,16 @@ void subInstr();
 void mpyInstr();
 void divInstr();
 void modInstr();
+int branchPInstr(char *testReg, char *labelName, command_table *hashtable);
+int branchNInstr(char *testReg, char *labelName, command_table *hashtable);
+int branchZInstr(char *testReg, char *labelName, command_table *hashtable);
+int branchNZInstr(char *testReg, char *labelName, command_table *hashtable);
+int branchZPInstr(char *testReg, char *labelName, command_table *hashtable);
+int branchNZPInstr(char *testReg, char *labelName, command_table *hashtable);
+int getValueToTest(char * regis);
+int findLabelCounter(char *labelName, command_table *hashtable);
+int jmprInstr(char *reg, command_table *hashtable);
+int jsrInstr(char *reg, command_table *hashtable, FILE *outputFileName);
 
 //PC
 int programCounter = 0;
@@ -71,9 +81,10 @@ int main ( int argc, char *argv[] )
 
 		//load instructions into hash table
 		load_commands (command_table_hash, argv[1]) ;
-		run_through_commands (command_table_hash, outputFile);
-		//print the table for testing purposes
 		print_table (command_table_hash) ;
+		run_through_commands (command_table_hash, outputFile);
+		//int testFindLabelCounterFunction = findLabelCounter("TEST", command_table_hash);
+		//printf("testFindLabelCounterFunction should be 1... = %d",testFindLabelCounterFunction);
 		intStack *current;
 		current = stackOfInts;
 	    while (current != NULL) {
@@ -104,12 +115,19 @@ void print_table (command_table *hashtable) {
 
 void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 	command *tmp_cmnd = NULL ;
+	//1 if there's a jump ocurring, 0 otherwise
+	int isJumping = 0;
 
-	while (programCounter < ((bucketCounter -1)/2)) {
+	while (programCounter < (bucketCounter)) {
+		//printf("bucketCounter = %d\n",bucketCounter);
+		isJumping = 0;
 		tmp_cmnd = hashtable->table[programCounter] ;
+		//printf("cur tmp_cmnd->instruction = %s\n",tmp_cmnd->instruction);
 
 		if (tmp_cmnd != NULL) {
+			isJumping = 0;
 			while (tmp_cmnd != NULL) {
+
 				//split instruction and append tokens to 'res' */
 				char ** res  = NULL;
 				char *  p    = strtok (tmp_cmnd->instruction, " ");
@@ -135,6 +153,9 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 
 				for (i = 0; i < (n_spaces+1); ++i) {
 					if (i == 0) {
+						isJumping = 0;
+						//printf("%s vs. BRANCHp = %d\n",res[i], strcmp(res[i],"BRANCHp"));
+						//printf("%s vs. PUSH = %d\n",res[i], strcmp(res[i],"PUSH"));
 						//identify the current instruction
 						if (strcmp(res[i],"CONST") == 0 ) {
 							constInstr(res[1], res[2], n_spaces);
@@ -163,15 +184,64 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 						else if (strcmp(res[i],"MOD") == 0) {
 							modInstr();
 						}
+						else if (strcmp(res[i],"BRANCHp") == 0) {
+							isJumping = 1;
+							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"BRANCHn") == 0) {
+							isJumping = 1;
+							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"BRANCHz") == 0) {
+							isJumping = 1;
+							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"BRANCHzp") == 0) {
+							isJumping = 1;
+							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"BRANCHnz") == 0) {
+							isJumping = 1;
+							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"BRANCHnzp") == 0) {
+							isJumping = 1;
+							programCounter = branchPInstr(res[i+1],res[i+2], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"JSR") == 0) {
+							isJumping = 1;
+							programCounter = jsrInstr(res[i+1], hashtable, outputFileName);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"JMPR") == 0) {
+							isJumping = 1;
+							programCounter = jmprInstr(res[i+1], hashtable);
+							printf("Program Counter post-jump = %d",programCounter);
+						}
+						else if (strcmp(res[i],"LABEL") == 0) {
+							//do nothing for a label
+						}
+						else {
+							printf("res[i] = %s",res[i]);
+							printf("Error with the input rpn file. Please try again\n");
+							exit(0);
+						}
 					}
 				}
 
 				/* free the memory allocated */
 				free (res);
-				tmp_cmnd = tmp_cmnd->next;
-				programCounter++;
-				printf("programCounter = %d\n",programCounter);
-				printf("bucketCounter = %d\n",bucketCounter);
+				//increment the PC by one, because there are no jumps occuring
+				if (isJumping == 0) {
+					tmp_cmnd = tmp_cmnd->next;
+					programCounter++;
+				}
 			}
 		}
 	}
@@ -412,6 +482,260 @@ void modInstr() {
 	stackOfInts->next = stackOfInts->next->next;
 }
 
+int getValueToTest(char * regis) {
+	int valueToTest;
+
+	if (strcmp(regis,"R0") == 0) {
+		valueToTest = R0;
+	}
+	else if (strcmp(regis,"R1") == 0) {
+		valueToTest = R1;
+	}
+	else if (strcmp(regis,"R2") == 0) {
+		valueToTest = R2;
+	}
+	else if (strcmp(regis,"R3") == 0) {
+		valueToTest = R3;
+	}
+	else if (strcmp(regis,"R4") == 0) {
+		valueToTest = R4;
+	}
+	else if (strcmp(regis,"R5") == 0) {
+		valueToTest = R5;
+	}
+	else if (strcmp(regis,"R6") == 0) {
+		valueToTest = R6;
+	}
+	else if (strcmp(regis,"R7") == 0) {
+		valueToTest = R7;
+	}
+	else {
+		printf("Error with the BRANCHp instruction for %s\n", regis);
+		exit(0);
+	}
+	return valueToTest;
+}
+
+int branchPInstr(char *testReg, char *labelName, command_table *hashtable) {
+	printf("Here");
+	//get the register (first 2 chars of reg)
+	char regis[3];
+	strncpy(regis, testReg, 2);
+	regis[2] = '\0';
+
+	int valueToTest;
+	if (valueToTest > 0) {
+		//then branch
+		//find where the programCounter should go to
+		int returnResult = findLabelCounter(labelName, hashtable);
+		if (returnResult > 0) {
+			printf("Should be 1...%d",returnResult);
+			return returnResult;
+		}
+		else {
+			printf("Error: the referenced label in the branch was not found\n");
+		}
+	}
+	return (programCounter + 1);
+}
+
+int branchNInstr(char *testReg, char *labelName, command_table *hashtable) {
+	//get the register (first 2 chars of reg)
+	char regis[3];
+	strncpy(regis, testReg, 2);
+	regis[2] = '\0';
+
+	int valueToTest;
+	if (valueToTest < 0) {
+		//then branch
+		//find where the programCounter should go to
+		int returnResult = findLabelCounter(labelName, hashtable);
+		if (returnResult > 0) {
+			printf("Should be 1...%d",returnResult);
+			return returnResult;
+		}
+		else {
+			printf("Error: the referenced label in the branch was not found\n");
+		}
+	}
+	return (programCounter + 1);
+}
+
+int branchZInstr(char *testReg, char *labelName, command_table *hashtable) {
+	//get the register (first 2 chars of reg)
+	char regis[3];
+	strncpy(regis, testReg, 2);
+	regis[2] = '\0';
+
+	int valueToTest;
+	if (valueToTest == 0) {
+		//then branch
+		//find where the programCounter should go to
+		int returnResult = findLabelCounter(labelName, hashtable);
+		if (returnResult > 0) {
+			printf("Should be 1...%d",returnResult);
+			return returnResult;
+		}
+		else {
+			printf("Error: the referenced label in the branch was not found\n");
+		}
+	}
+	return (programCounter + 1);
+}
+
+int branchNZInstr(char *testReg, char *labelName, command_table *hashtable) {
+	printf("Here");
+	//get the register (first 2 chars of reg)
+	char regis[3];
+	strncpy(regis, testReg, 2);
+	regis[2] = '\0';
+
+	int valueToTest;
+	if (valueToTest <= 0) {
+		//then branch
+		//find where the programCounter should go to
+		int returnResult = findLabelCounter(labelName, hashtable);
+		if (returnResult > 0) {
+			printf("Should be 1...%d",returnResult);
+			return returnResult;
+		}
+		else {
+			printf("Error: the referenced label in the branch was not found\n");
+		}
+	}
+	return (programCounter + 1);
+}
+
+int branchZPInstr(char *testReg, char *labelName, command_table *hashtable) {
+	printf("Here");
+	//get the register (first 2 chars of reg)
+	char regis[3];
+	strncpy(regis, testReg, 2);
+	regis[2] = '\0';
+
+	int valueToTest;
+	if (valueToTest >= 0) {
+		//then branch
+		//find where the programCounter should go to
+		int returnResult = findLabelCounter(labelName, hashtable);
+		if (returnResult > 0) {
+			printf("Should be 1...%d",returnResult);
+			return returnResult;
+		}
+		else {
+			printf("Error: the referenced label in the branch was not found\n");
+		}
+	}
+	return (programCounter + 1);
+}
+
+int branchNZPInstr(char *testReg, char *labelName, command_table *hashtable) {
+	
+	int returnResult = findLabelCounter(labelName, hashtable);		
+	return returnResult;	
+	
+}
+
+int jsrInstr(char *reg, command_table *hashtable, FILE *outputFileName) {
+	int toStack;
+	//why do we need to push to stack??
+	/*toStack = programCounter + 1;
+	if (!stackOfInts->value) {
+		//list is empty
+		stackOfInts->value = toStack;
+		stackOfInts->next = NULL;
+	}
+	else {
+		//list has elements. add cur int to front of linked list
+		intStack *curNode = 
+			malloc (sizeof (struct struct_of_ints) ) ;
+		curNode->value = toStack;
+		curNode->next = stackOfInts;
+		stackOfInts = curNode;
+	}*/
+	run_through_commands(hashtable, outputFileName);
+	return toStack;
+}
+
+int jmprInstr(char *reg, command_table *hashtable) {
+	char regis[3];
+	strncpy(regis, reg, 2);
+	regis[2] = '\0';
+	int valueToTest;
+	if (strcmp(regis,"R0") == 0) {
+		valueToTest = R0;
+	}
+	else if (strcmp(regis,"R1") == 0) {
+		valueToTest = R1;
+	}
+	else if (strcmp(regis,"R2") == 0) {
+		valueToTest = R2;
+	}
+	else if (strcmp(regis,"R3") == 0) {
+		valueToTest = R3;
+	}
+	else if (strcmp(regis,"R4") == 0) {
+		valueToTest = R4;
+	}
+	else if (strcmp(regis,"R5") == 0) {
+		valueToTest = R5;
+	}
+	else if (strcmp(regis,"R6") == 0) {
+		valueToTest = R6;
+	}
+	else if (strcmp(regis,"R7") == 0) {
+		valueToTest = R7;
+	}
+	//if outside of bounds
+	if (valueToTest < 0 || valueToTest >= bucketCounter) {
+		printf("Error: Trying to jmpr to outside of script\n");
+		exit(0);
+	}
+	return valueToTest;	
+}
+
+
+int findLabelCounter(char *labelName, command_table *hashtable) {
+	/*command *tmp_cmnd = NULL ;
+	for (int i = 0; i < hashtable->num_of_buckets; i++) {
+		tmp_cmnd = hashtable->table[programCounter] ;
+		printf("tmp_cmnd->instruction = %s",tmp_cmnd->instruction);
+		if (tmp_cmnd != NULL) {
+			while (tmp_cmnd != NULL) {
+				//split instruction and append tokens to 'res'
+				char ** res  = NULL;
+				char *  p    = strtok (tmp_cmnd->instruction, " ");
+				int n_spaces = 0, i;			
+
+				while (p) {
+				    res = realloc (res, sizeof (char*) * ++n_spaces);
+
+				    if (res == NULL)
+				        exit (-1); // memory allocation failed 
+
+				    res[n_spaces-1] = p;
+
+				    p = strtok (NULL, " ");
+				}
+
+				// realloc one extra element for the last NULL 
+
+				res = realloc (res, sizeof (char*) * (n_spaces+1));
+				res[n_spaces] = 0;
+				printf("labelName = %s and res[1] = %s",labelName, res[1]);
+				if (strcmp(res[1],labelName) == 0 ) {				
+					free (res);
+					return i;
+				}			
+				free (res);
+			}
+		}
+	}
+	return -1;*/
+	return 1;
+}
+
+
 command_table *create_hash_table(int num_of_buckets) {
 	int i ;
     command_table *new_table;
@@ -493,7 +817,7 @@ unsigned int map (command_table *hashtable, command *cmnd)
 	}
 
  	// this next line is the actual hash function
- 	return ((hashval - 1) / 2) % hashtable->num_of_buckets;	// useless if buckets > 26
+ 	return ((hashval) % hashtable->num_of_buckets);	// useless if buckets > 26
 }
 
 int add (command_table *hashtable, command *cmnd)
@@ -503,13 +827,13 @@ int add (command_table *hashtable, command *cmnd)
     unsigned int bucket ;
 
     /* does command already exist in table? */
-    tmp_cmnd = find(hashtable, cmnd);
+    /*tmp_cmnd = find(hashtable, cmnd);
     if (tmp_cmnd != NULL) {
-	    /* item already exists, don't insert it again. */
-		fprintf (stderr, "ERROR, command with instruction = [%s] already in table\n",
-				 cmnd->instruction) ;
-		return 1;
-	}
+	    // item already exists, don't insert it again. */
+		//fprintf (stderr, "ERROR, command with instruction = [%s] already in table\n",
+		//		 cmnd->instruction) ;
+		//return 1;
+	//}
 
     /* otherwise, insert into appropriate bucket */
     bucket = map(hashtable, cmnd) ;			 // map command to hash value
