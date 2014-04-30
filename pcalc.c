@@ -54,11 +54,12 @@ int main ( int argc, char *argv[] )
 
 		//load instructions into hash table
 		load_commands (command_table_hash, argv[1]) ;
-		//print_table (command_table) ;*/
+		//print the table for testing purposes
+		print_table (command_table_hash) ;
 	}
 }
 
-/*void print_table (command_table *hashtable) {
+void print_table (command_table *hashtable) {
 
 	int i = 0 ;
 	command *tmp_cmnd = NULL ;
@@ -71,7 +72,7 @@ int main ( int argc, char *argv[] )
 		if (tmp_cmnd == NULL) printf ("EMPTY\n") ;
 
 		while (tmp_cmnd != NULL) {
-			printf ("{%s, %s}", tmp_cmnd->lname, tmp_cmnd->fname ) ;
+			printf ("{%s}", tmp_cmnd->instruction ) ;
 			tmp_cmnd = tmp_cmnd->next ;
 			if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
 
@@ -79,7 +80,8 @@ int main ( int argc, char *argv[] )
 
 	}
 
-}*/
+}
+
 
 command_table *create_hash_table(int num_of_buckets) {
 	int i ;
