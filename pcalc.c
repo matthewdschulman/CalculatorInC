@@ -28,6 +28,7 @@ unsigned int map (command_table *hashtable, command *cmnd);
 void run_through_commands (command_table *hashtable);
 void constInstr (char *reg, char *val, int n_spaces);
 void pushInstr (char *curInt);
+void popInstr(char *destReg);
 
 int main ( int argc, char *argv[] )
 {
@@ -61,6 +62,8 @@ int main ( int argc, char *argv[] )
 	        printf("stack#: %d\n", current->value);
 	        current = current->next;
 	    }
+	    printf("R4 = %d",R4);
+	    printf("R5 = %d",R5);
 	}
 }
 
@@ -123,6 +126,9 @@ void run_through_commands (command_table *hashtable) {
 						}
 						else if (strcmp(res[i],"PUSH") == 0 ) {
 							pushInstr(res[i+1]);							
+						}
+						else if (strcmp(res[i],"POP") == 0) {
+							popInstr(res[i+1]);
 						}
 					}
 				}
@@ -220,6 +226,51 @@ void pushInstr(char *reg) {
 		curNode->value = valueToPush;
 		curNode->next = stackOfInts;
 		stackOfInts = curNode;
+	}
+}
+
+void popInstr(char *destReg) {
+	//first check that there is an element to pop
+	if (stackOfInts == NULL) {
+		printf("Error: Tried to pop with nothing on the stack of ints\n");
+	}
+
+	//get the register (first 2 chars of destReg)
+	char regis[3];
+	strncpy(regis, destReg, 2);
+	regis[2] = '\0';
+
+	int poppedInt;
+	poppedInt = stackOfInts->value;
+	stackOfInts = stackOfInts->next;
+
+	//find which regsiter to place the poppedInt
+	if (strcmp(regis,"R0") == 0) {
+		R0 = poppedInt;
+	}
+	else if (strcmp(regis,"R1") == 0) {
+		R1 = poppedInt;
+	}
+	else if (strcmp(regis,"R2") == 0) {
+		R2 = poppedInt;
+	}
+	else if (strcmp(regis,"R3") == 0) {
+		R3 = poppedInt;
+	}
+	else if (strcmp(regis,"R4") == 0) {
+		R4 = poppedInt;
+	}
+	else if (strcmp(regis,"R5") == 0) {
+		R5 = poppedInt;
+	}
+	else if (strcmp(regis,"R6") == 0) {
+		R6 = poppedInt;
+	}
+	else if (strcmp(regis,"R7") == 0) {
+		R7 = poppedInt;
+	}
+	else {
+		printf("Error with the POP instruction for %s\n", destReg);
 	}
 }
 
