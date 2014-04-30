@@ -31,6 +31,10 @@ void pushInstr (char *curInt);
 void popInstr(char *destReg);
 void printnumInstr(FILE *outputFile);
 void addInstr();
+void subInstr();
+void mpyInstr();
+void divInstr();
+void modInstr();
 
 int main ( int argc, char *argv[] )
 {
@@ -144,6 +148,18 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 						}
 						else if (strcmp(res[i],"ADD") == 0) {
 							addInstr();
+						}
+						else if (strcmp(res[i],"SUB") == 0) {
+							subInstr();
+						}
+						else if (strcmp(res[i],"MPY") == 0) {
+							mpyInstr();
+						}
+						else if (strcmp(res[i],"DIV") == 0) {
+							divInstr();
+						}
+						else if (strcmp(res[i],"MOD") == 0) {
+							modInstr();
 						}
 					}
 				}
@@ -316,6 +332,78 @@ void addInstr() {
 	sum = x + y;
 	//top of stack is now the sum
 	stackOfInts->value = sum;
+	//skip second element of the stack
+	stackOfInts->next = stackOfInts->next->next;
+}
+
+void subInstr() {
+	int x;
+	int y;
+	int difference;
+	//check if stack has fewer than 2 ints
+	if (!stackOfInts->next->value) {
+		printf("Error: Add was called, and there are fewer than two ints on the stack\n");
+		exit(0);
+	}
+	x = stackOfInts->value;
+	y = stackOfInts->next->value;
+	difference = x - y;
+	//top of stack is now the sum
+	stackOfInts->value = difference;
+	//skip second element of the stack
+	stackOfInts->next = stackOfInts->next->next;
+}
+
+void mpyInstr() {
+	int x;
+	int y;
+	int product;
+	//check if stack has fewer than 2 ints
+	if (!stackOfInts->next->value) {
+		printf("Error: Add was called, and there are fewer than two ints on the stack\n");
+		exit(0);
+	}
+	x = stackOfInts->value;
+	y = stackOfInts->next->value;
+	product = x * y;
+	//top of stack is now the sum
+	stackOfInts->value = product;
+	//skip second element of the stack
+	stackOfInts->next = stackOfInts->next->next;
+}
+
+void divInstr() {
+	int x;
+	int y;
+	int quotient;
+	//check if stack has fewer than 2 ints
+	if (!stackOfInts->next->value) {
+		printf("Error: Add was called, and there are fewer than two ints on the stack\n");
+		exit(0);
+	}
+	x = stackOfInts->value;
+	y = stackOfInts->next->value;
+	quotient = x / y;
+	//top of stack is now the sum
+	stackOfInts->value = quotient;
+	//skip second element of the stack
+	stackOfInts->next = stackOfInts->next->next;
+}
+
+void modInstr() {
+	int x;
+	int y;
+	int mod;
+	//check if stack has fewer than 2 ints
+	if (!stackOfInts->next->value) {
+		printf("Error: Add was called, and there are fewer than two ints on the stack\n");
+		exit(0);
+	}
+	x = stackOfInts->value;
+	y = stackOfInts->next->value;
+	mod = x % y;
+	//top of stack is now the sum
+	stackOfInts->value = mod;
 	//skip second element of the stack
 	stackOfInts->next = stackOfInts->next->next;
 }
