@@ -25,10 +25,11 @@ void print_table (command_table *hashtable);
 command* find (command_table *hashtable, command *cmnd);
 int add (command_table *hashtable, command *cmnd);
 unsigned int map (command_table *hashtable, command *cmnd);
-void run_through_commands (command_table *hashtable);
+void run_through_commands (command_table *hashtable, FILE *outputFileName);
 void constInstr (char *reg, char *val, int n_spaces);
 void pushInstr (char *curInt);
 void popInstr(char *destReg);
+void printnumInstr(FILE *outputFile);
 
 int main ( int argc, char *argv[] )
 {
@@ -41,7 +42,15 @@ int main ( int argc, char *argv[] )
     }
 
     else 
-    {
+    {	
+    	int status;
+    	//create output file
+    	char outputFileName[100];
+		strcpy (outputFileName,argv[1]);
+		strcat (outputFileName,".out");
+		//delete file if it already exists to start from scratch
+		status = remove(outputFileName);
+    	FILE *outputFile = fopen(outputFileName, "ab+");
 		// allocate 1 element list to represent the stack of calculator ints
 		stackOfInts = 
 			malloc (sizeof (struct struct_of_ints) ) ;
@@ -53,7 +62,7 @@ int main ( int argc, char *argv[] )
 
 		//load instructions into hash table
 		load_commands (command_table_hash, argv[1]) ;
-		run_through_commands (command_table_hash);
+		run_through_commands (command_table_hash, outputFile);
 		//print the table for testing purposes
 		print_table (command_table_hash) ;
 		intStack *current;
@@ -62,8 +71,6 @@ int main ( int argc, char *argv[] )
 	        printf("stack#: %d\n", current->value);
 	        current = current->next;
 	    }
-	    printf("R4 = %d",R4);
-	    printf("R5 = %d",R5);
 	}
 }
 
@@ -86,7 +93,7 @@ void print_table (command_table *hashtable) {
 	}
 }
 
-void run_through_commands (command_table *hashtable) {
+void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 	int i = 0 ;
 	command *tmp_cmnd = NULL ;
 
@@ -95,7 +102,7 @@ void run_through_commands (command_table *hashtable) {
 
 		if (tmp_cmnd != NULL) {
 			while (tmp_cmnd != NULL) {
-				/* split instruction and append tokens to 'res' */
+				//split instruction and append tokens to 'res' */
 				char ** res  = NULL;
 				char *  p    = strtok (tmp_cmnd->instruction, " ");
 				int n_spaces = 0, i;			
@@ -129,6 +136,9 @@ void run_through_commands (command_table *hashtable) {
 						}
 						else if (strcmp(res[i],"POP") == 0) {
 							popInstr(res[i+1]);
+						}
+						else if (strcmp(res[i],"PRINTNUM") == 0) {
+							printnumInstr(outputFileName);
 						}
 					}
 				}
@@ -274,6 +284,11 @@ void popInstr(char *destReg) {
 	}
 }
 
+void printnumInstr(FILE *outputFile) {
+	fprintf(outputFile, "%d\n", stackOfInts->value);
+	printf("%d\n",stackOfInts->value);
+}
+
 
 command_table *create_hash_table(int num_of_buckets) {
 	int i ;
@@ -324,23 +339,22 @@ int load_commands (command_table *hashtable, char *filename) {
 
 	// read a line from the file
 	while (fgets (instruction, MAX_LINE_LENGTH, theFile)) {
+		char *p = strchr(instruction,'\n');
+		if (p)
+		    *p = '\0';
+	
+		// allocate memory for command & its fields
+		a_command = malloc(sizeof(command)) ;
+
+		a_command->instruction = malloc( strlen(instruction) + 1 ) ;
+		strcpy (a_command->instruction, instruction) ;
+
+		if (add (hashtable, a_command) != 0) {
+			// if "add" fails, make certain to free this memory!
+			free (a_command->instruction) ;
+			free (a_command) ;
+		}
 		
-			// allocate memory for command & its fields
-			a_command = malloc(sizeof(command)) ;
-
-			a_command->instruction = malloc( strlen(instruction) + 1 ) ;
-			strcpy (a_command->instruction, instruction) ;
-
-			if (add (hashtable, a_command) != 0) {
-				// if "add" fails, make certain to free this memory!
-				free (a_command->instruction) ;
-				free (a_command) ;
-			}
-			/* if "add" doesn't fail, when hash table is "deleted" it will free memory
-
-  		} else {
-			fprintf (stderr, "ERROR: formatting error in file\n") ;
-		}*/
   	}
 	fclose (theFile);	// not closing a file...leaks memory too!
 	return 0 ;
