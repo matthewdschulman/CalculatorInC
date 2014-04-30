@@ -17,6 +17,7 @@ int R5;
 int R6;
 int R7;
 int bucketCounter = 0;
+struct struct_of_ints *stackOfInts;
 
 int isNumeric (const char * s);
 int load_commands (command_table *hashtable, char *filename);
@@ -26,6 +27,7 @@ int add (command_table *hashtable, command *cmnd);
 unsigned int map (command_table *hashtable, command *cmnd);
 void run_through_commands (command_table *hashtable);
 void constInstr (char *reg, char *val, int n_spaces);
+void pushInstr (char *curInt);
 
 int main ( int argc, char *argv[] )
 {
@@ -39,17 +41,11 @@ int main ( int argc, char *argv[] )
 
     else 
     {
-    /*	struct struct_of_ints {
-			int value ;
-			struct struct_of_ints *next ;
-		} ; 
-
 		// allocate 1 element list to represent the stack of calculator ints
-		struct struct_of_ints *stackOfInts = 
+		stackOfInts = 
 			malloc (sizeof (struct struct_of_ints) ) ;
-*/
-		/* lined list node definition will store commands */
-		
+
+		/* lined list node definition will store commands */	
 
 		command_table *command_table_hash ;
 		command_table_hash = create_hash_table(BUCKETS) ;
@@ -59,6 +55,12 @@ int main ( int argc, char *argv[] )
 		run_through_commands (command_table_hash);
 		//print the table for testing purposes
 		print_table (command_table_hash) ;
+		intStack *current;
+		current = stackOfInts;
+	    while (current != NULL) {
+	        printf("stack#: %d\n", current->value);
+	        current = current->next;
+	    }
 	}
 }
 
@@ -111,13 +113,16 @@ void run_through_commands (command_table *hashtable) {
 				res = realloc (res, sizeof (char*) * (n_spaces+1));
 				res[n_spaces] = 0;
 
-				/* print the result */
+				/* conduct the commands*/
 
 				for (i = 0; i < (n_spaces+1); ++i) {
 					if (i == 0) {
 						//identify the current instruction
 						if (strcmp(res[i],"CONST") == 0 ) {
 							constInstr(res[1], res[2], n_spaces);
+						}
+						else if (strcmp(res[i],"PUSH") == 0 ) {
+							pushInstr(res[i+1]);							
 						}
 					}
 				}
@@ -133,7 +138,6 @@ void run_through_commands (command_table *hashtable) {
 
 //functions for different commands...
 void constInstr(char *reg, char *val, int n_spaces) {
-	printf("%s %s", reg, val);
 	if (strcmp(reg,"R0") == 0) {
 		R0 = atoi(val);
 	}
@@ -160,6 +164,62 @@ void constInstr(char *reg, char *val, int n_spaces) {
 	}
 	else {
 		printf("Error with the CONST syntax of the input file\n");
+	}
+}
+
+void pushInstr(char *reg) {
+
+	//get the register (first 2 chars of reg)
+	char regis[3];
+	strncpy(regis, reg, 2);
+	regis[2] = '\0'; 
+
+	//find the value to push
+	int valueToPush;
+	if (strcmp(regis,"R0") == 0) {
+		valueToPush = R0;
+	}
+	else if (strcmp(regis,"R1") == 0) {
+		valueToPush = R1;
+	}
+	else if (strcmp(regis,"R2") == 0) {
+		valueToPush = R2;
+	}
+	else if (strcmp(regis,"R3") == 0) {
+		valueToPush = R3;
+	}
+	else if (strcmp(regis,"R4") == 0) {
+		valueToPush = R4;
+	}
+	else if (strcmp(regis,"R5") == 0) {
+		valueToPush = R5;
+	}
+	else if (strcmp(regis,"R6") == 0) {
+		valueToPush = R6;
+	}
+	else if (strcmp(regis,"R7") == 0) {
+		valueToPush = R7;
+	}
+	else {
+		printf("Error with the PUSH instruction for %s\n", reg);
+	}
+	//push res[i+1] to front of stack
+	//create new node with the current value
+	//function call: pushToFrontOfStack(struct_of_ints, curIntIfInt);
+	//first check if the list is empty
+
+	if (!stackOfInts->value) {
+		//list is empty
+		stackOfInts->value = valueToPush;
+		stackOfInts->next = NULL;
+	}
+	else {
+		//list has elements. add cur int to front of linked list
+		intStack *curNode = 
+			malloc (sizeof (struct struct_of_ints) ) ;
+		curNode->value = valueToPush;
+		curNode->next = stackOfInts;
+		stackOfInts = curNode;
 	}
 }
 
