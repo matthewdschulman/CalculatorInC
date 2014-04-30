@@ -25,7 +25,7 @@ command* find (command_table *hashtable, command *cmnd);
 int add (command_table *hashtable, command *cmnd);
 unsigned int map (command_table *hashtable, command *cmnd);
 void run_through_commands (command_table *hashtable);
-
+void constInstr (char *reg, char *val, int n_spaces);
 
 int main ( int argc, char *argv[] )
 {
@@ -59,6 +59,8 @@ int main ( int argc, char *argv[] )
 		run_through_commands (command_table_hash);
 		//print the table for testing purposes
 		print_table (command_table_hash) ;
+		printf("R1 = %d",R1);
+		printf("R2 = %d",R2);
 	}
 }
 
@@ -90,21 +92,20 @@ void run_through_commands (command_table *hashtable) {
 
 		if (tmp_cmnd != NULL) {
 			while (tmp_cmnd != NULL) {
+				/* split instruction and append tokens to 'res' */
 				char ** res  = NULL;
 				char *  p    = strtok (tmp_cmnd->instruction, " ");
-				int n_spaces = 0, i;
-
-				/* split string and append tokens to 'res' */
+				int n_spaces = 0, i;			
 
 				while (p) {
-				  res = realloc (res, sizeof (char*) * ++n_spaces);
+				    res = realloc (res, sizeof (char*) * ++n_spaces);
 
-				  if (res == NULL)
-				    exit (-1); /* memory allocation failed */
+				    if (res == NULL)
+				        exit (-1); /* memory allocation failed */
 
-				  res[n_spaces-1] = p;
+				    res[n_spaces-1] = p;
 
-				  p = strtok (NULL, " ");
+				    p = strtok (NULL, " ");
 				}
 
 				/* realloc one extra element for the last NULL */
@@ -114,8 +115,14 @@ void run_through_commands (command_table *hashtable) {
 
 				/* print the result */
 
-				for (i = 0; i < (n_spaces+1); ++i)
-				  printf ("res[%d] = %s\n", i, res[i]);
+				for (i = 0; i < (n_spaces+1); ++i) {
+					if (i == 0) {
+						//identify the current instruction
+						if (strcmp(res[i],"CONST") == 0 ) {
+							constInstr(res[1], res[2], n_spaces);
+						}
+					}
+				}
 
 				/* free the memory allocated */
 
@@ -124,20 +131,38 @@ void run_through_commands (command_table *hashtable) {
 			}
 		}
 	}
+}
 
-
-	/*for (i=0 ; i < hashtable->num_of_buckets ; i++) {
-		tmp_cmnd = hashtable->table[i] ;
-		//split up command into its sub-words
-		char *token;
-		char *search = " ";
-
-		// Token will point to "SEVERAL".
-		token = strtok(tmp_cmnd->instruction, search);
-
-		printf("%s", token);
-	}*/
-
+//functions for different commands...
+void constInstr(char *reg, char *val, int n_spaces) {
+	printf("%s %s", reg, val);
+	if (strcmp(reg,"R0") == 0) {
+		R0 = atoi(val);
+	}
+	else if (strcmp(reg,"R1") == 0) {
+		R1 = atoi(val);
+	}
+	else if (strcmp(reg,"R2") == 0) {
+		R2 = atoi(val);
+	}
+	else if (strcmp(reg,"R3") == 0) {
+		R3 = atoi(val);
+	}
+	else if (strcmp(reg,"R4") == 0) {
+		R4 = atoi(val);
+	}
+	else if (strcmp(reg,"R5") == 0) {
+		R5 = atoi(val);
+	}
+	else if (strcmp(reg,"R6") == 0) {
+		R6 = atoi(val);
+	}
+	else if (strcmp(reg,"R7") == 0) {
+		R7 = atoi(val);
+	}
+	else {
+		printf("Error with the CONST syntax of the input file\n");
+	}
 }
 
 

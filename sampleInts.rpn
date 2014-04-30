@@ -1,15 +1,1 @@
-1
-2
-4
-5
-3
-4
-0
-hello
-5
-asdfasdf
-asd ads
-fasdf
-6
-3
-2
+CONST R1 1 ; store 1 in register R1
