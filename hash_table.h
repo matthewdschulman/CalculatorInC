@@ -7,7 +7,7 @@ typedef struct command_struct {
 /* hash table that will store "people" */
 typedef struct hash_table_struct {
     int num_of_buckets ;        /* the size of the table */
-    command **table ;  			/* table points to an array of pointers to persons */
+    command **table ;  			/* table points to an array of pointers to commands */
 } command_table ;
 
 /* helper functions to manage hashtable */

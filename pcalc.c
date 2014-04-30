@@ -16,6 +16,7 @@ int R4;
 int R5;
 int R6;
 int R7;
+int bucketCounter = 0;
 
 int isNumeric (const char * s);
 int load_commands (command_table *hashtable, char *filename);
@@ -60,22 +61,20 @@ int main ( int argc, char *argv[] )
 }
 
 void print_table (command_table *hashtable) {
-
 	int i = 0 ;
 	command *tmp_cmnd = NULL ;
 
 	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
 		tmp_cmnd = hashtable->table[i] ;
 
-		printf ("bucket[%02d]=", i) ;
+		if (tmp_cmnd != NULL) {
+			printf ("bucket[%02d]=", i) ;
+			while (tmp_cmnd != NULL) {
+				printf ("%s", tmp_cmnd->instruction ) ;
+				tmp_cmnd = tmp_cmnd->next ;
+				if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
 
-		if (tmp_cmnd == NULL) printf ("EMPTY\n") ;
-
-		while (tmp_cmnd != NULL) {
-			printf ("{%s}", tmp_cmnd->instruction ) ;
-			tmp_cmnd = tmp_cmnd->next ;
-			if (tmp_cmnd == NULL) printf ("\n") ; else printf (", ") ;
-
+			}
 		}
 
 	}
@@ -155,16 +154,17 @@ int load_commands (command_table *hashtable, char *filename) {
 }
 
 unsigned int map (command_table *hashtable, command *cmnd)
-{
+{	
     int hashval ;
     
 	if (cmnd != NULL )
 	{
-		hashval = 1 ;
+		hashval = bucketCounter ;
+		bucketCounter++;
 	}
 
  	// this next line is the actual hash function
- 	return hashval % hashtable->num_of_buckets;	// useless if buckets > 26
+ 	return ((hashval - 1) / 2) % hashtable->num_of_buckets;	// useless if buckets > 26
 }
 
 int add (command_table *hashtable, command *cmnd)
@@ -183,12 +183,11 @@ int add (command_table *hashtable, command *cmnd)
 	}
 
     /* otherwise, insert into appropriate bucket */
-    bucket = map(hashtable, cmnd) ;			 // map last name to hash value
+    bucket = map(hashtable, cmnd) ;			 // map command to hash value
     cmnd->next = hashtable->table[bucket];   // incoming command will be new top of bucket
     hashtable->table[bucket] = cmnd;		 // top of bucket is incoming command
 
 	return 0 ;
-
 }
 
 command* find (command_table *hashtable, command *cmnd)
