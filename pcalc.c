@@ -24,6 +24,7 @@ void print_table (command_table *hashtable);
 command* find (command_table *hashtable, command *cmnd);
 int add (command_table *hashtable, command *cmnd);
 unsigned int map (command_table *hashtable, command *cmnd);
+void run_through_commands (command_table *hashtable);
 
 
 int main ( int argc, char *argv[] )
@@ -55,6 +56,7 @@ int main ( int argc, char *argv[] )
 
 		//load instructions into hash table
 		load_commands (command_table_hash, argv[1]) ;
+		run_through_commands (command_table_hash);
 		//print the table for testing purposes
 		print_table (command_table_hash) ;
 	}
@@ -76,8 +78,65 @@ void print_table (command_table *hashtable) {
 
 			}
 		}
-
 	}
+}
+
+void run_through_commands (command_table *hashtable) {
+	int i = 0 ;
+	command *tmp_cmnd = NULL ;
+
+	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+
+		if (tmp_cmnd != NULL) {
+			while (tmp_cmnd != NULL) {
+				char ** res  = NULL;
+				char *  p    = strtok (tmp_cmnd->instruction, " ");
+				int n_spaces = 0, i;
+
+				/* split string and append tokens to 'res' */
+
+				while (p) {
+				  res = realloc (res, sizeof (char*) * ++n_spaces);
+
+				  if (res == NULL)
+				    exit (-1); /* memory allocation failed */
+
+				  res[n_spaces-1] = p;
+
+				  p = strtok (NULL, " ");
+				}
+
+				/* realloc one extra element for the last NULL */
+
+				res = realloc (res, sizeof (char*) * (n_spaces+1));
+				res[n_spaces] = 0;
+
+				/* print the result */
+
+				for (i = 0; i < (n_spaces+1); ++i)
+				  printf ("res[%d] = %s\n", i, res[i]);
+
+				/* free the memory allocated */
+
+				free (res);
+				tmp_cmnd = tmp_cmnd->next;
+			}
+		}
+	}
+
+
+	/*for (i=0 ; i < hashtable->num_of_buckets ; i++) {
+		tmp_cmnd = hashtable->table[i] ;
+		//split up command into its sub-words
+		char *token;
+		char *search = " ";
+
+		// Token will point to "SEVERAL".
+		token = strtok(tmp_cmnd->instruction, search);
+
+		printf("%s", token);
+	}*/
 
 }
 
