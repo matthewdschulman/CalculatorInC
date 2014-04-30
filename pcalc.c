@@ -7,9 +7,6 @@
 #define BUCKETS 100
 #define MAX_LINE_LENGTH 80
 
-//program counter
-int programCounter;
-
 //global register ints
 int R0;
 int R1;
@@ -20,17 +17,14 @@ int R5;
 int R6;
 int R7;
 int bucketCounter = 0;
-int labelCounter = 0;
 struct struct_of_ints *stackOfInts;
 
 int isNumeric (const char * s);
-int load_commands (command_table *hashtable, label_table *label_hash_table, char *filename);
+int load_commands (command_table *hashtable, char *filename);
 void print_table (command_table *hashtable);
-void print_labels (label_table *hashtable);
 command* find (command_table *hashtable, command *cmnd);
-int addCommand (command_table *hashtable, command *cmnd);
-int addLabel (label_table *hashtable, label_mapping *label);
-unsigned int mapCommand (command_table *hashtable, command *cmnd);
+int add (command_table *hashtable, command *cmnd);
+unsigned int map (command_table *hashtable, command *cmnd);
 void run_through_commands (command_table *hashtable, FILE *outputFileName);
 void constInstr (char *reg, char *val, int n_spaces);
 void pushInstr (char *curInt);
@@ -41,7 +35,9 @@ void subInstr();
 void mpyInstr();
 void divInstr();
 void modInstr();
-label_table *create_label_table(int num_of_buckets);
+
+//PC
+int programCounter = 0;
 
 int main ( int argc, char *argv[] )
 {
@@ -64,30 +60,20 @@ int main ( int argc, char *argv[] )
 		//delete file if it already exists to start from scratch
 		status = remove(outputFileName);
     	FILE *outputFile = fopen(outputFileName, "ab+");
-		
-		/* for storing commands */	
-		command_table *command_table_hash ;
-		command_table_hash =
-			malloc (sizeof (struct hash_table_struct)) ;
-		command_table_hash = create_hash_table(BUCKETS) ;
+		// allocate 1 element list to represent the stack of calculator ints
 		stackOfInts = 
 			malloc (sizeof (struct struct_of_ints) ) ;
-		//for keeping track of the labels
 
-        label_table *label_hash_table;
-		label_hash_table =
-			malloc (sizeof (struct hash_table_of_labels));
-		label_hash_table = create_label_table(BUCKETS);
+		/* lined list node definition will store commands */	
+
+		command_table *command_table_hash ;
+		command_table_hash = create_hash_table(BUCKETS) ;
 
 		//load instructions into hash table
-		printf("here0\n");
-		load_commands (command_table_hash, label_hash_table, argv[1]) ;
-		printf("here1\n");
+		load_commands (command_table_hash, argv[1]) ;
 		run_through_commands (command_table_hash, outputFile);
-		printf("here2\n");
 		//print the table for testing purposes
 		print_table (command_table_hash) ;
-		print_labels (label_hash_table);
 		intStack *current;
 		current = stackOfInts;
 	    while (current != NULL) {
@@ -116,31 +102,11 @@ void print_table (command_table *hashtable) {
 	}
 }
 
-void print_labels (label_table *hashtable) {
-	int i = 0 ;
-	label_mapping *tmp_lbl = NULL ;
-
-	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
-		tmp_lbl = hashtable->table[i] ;
-
-		if (tmp_lbl != NULL) {
-			printf ("bucket[%02d]=", i) ;
-			while (tmp_lbl != NULL) {
-				printf ("%s", tmp_lbl->label ) ;
-				tmp_lbl = tmp_lbl->next ;
-				if (tmp_lbl == NULL) printf ("\n") ; else printf (", ") ;
-
-			}
-		}
-	}
-}
-
 void run_through_commands (command_table *hashtable, FILE *outputFileName) {
-	int i = 0 ;
 	command *tmp_cmnd = NULL ;
 
-	for (i=0 ; i < hashtable->num_of_buckets ; i++) {
-		tmp_cmnd = hashtable->table[i] ;
+	while (programCounter < ((bucketCounter -1)/2)) {
+		tmp_cmnd = hashtable->table[programCounter] ;
 
 		if (tmp_cmnd != NULL) {
 			while (tmp_cmnd != NULL) {
@@ -201,9 +167,11 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 				}
 
 				/* free the memory allocated */
-
 				free (res);
 				tmp_cmnd = tmp_cmnd->next;
+				programCounter++;
+				printf("programCounter = %d\n",programCounter);
+				printf("bucketCounter = %d\n",bucketCounter);
 			}
 		}
 	}
@@ -472,39 +440,10 @@ command_table *create_hash_table(int num_of_buckets) {
     return new_table;
 }
 
-label_table *create_label_table(int num_of_buckets) {
-	int i ;
-    label_table *new_table;
-
-    if (num_of_buckets<1) return NULL; /* invalid size for table */
-
-    /* attempt to allocate memory for 1 hashtable structure */
-    if ((new_table = malloc(sizeof(label_table))) == NULL) {
-        fprintf (stderr, "ERROR: malloc failed\n") ;
-        return NULL;
-    }
-
-    /* attempt to allocate memory for each bucket of people */
-    if ((new_table->table = malloc(sizeof(label_mapping *) * num_of_buckets)) == NULL) {
-		free (new_table) ;
-		fprintf (stderr, "ERROR: malloc failed\n") ;
-        return NULL;
-    }
-
-    /* initialize the elements of the table */
-    for(i=0; i<num_of_buckets; i++) new_table->table[i] = NULL;
-
-    /* set the table's size */
-    new_table->num_of_buckets = num_of_buckets;
-
-    return new_table;
-}
-
-int load_commands (command_table *hashtable, label_table *label_hash_table, char *filename) {
+int load_commands (command_table *hashtable, char *filename) {
 	FILE *theFile;
 	command *a_command ;
 	char instruction[MAX_LINE_LENGTH];
-
 	int y = 0 ;
 
 	if (hashtable == NULL) {
@@ -522,49 +461,9 @@ int load_commands (command_table *hashtable, label_table *label_hash_table, char
 
 	// read a line from the file
 	while (fgets (instruction, MAX_LINE_LENGTH, theFile)) {
-		printf("instruction = %s\n",instruction);
 		char *p = strchr(instruction,'\n');
 		if (p)
 		    *p = '\0';
-		//delimit instruction by spaces	
-		char ** res  = NULL;
-		char *  q    = strtok (instruction, " ");
-		int n_spaces = 0, i;			
-
-		while (q) {
-		    res = realloc (res, sizeof (char*) * ++n_spaces);
-
-		    if (res == NULL)
-		        exit (-1); /* memory allocation failed */
-
-		    res[n_spaces-1] = q;
-
-		    q = strtok (NULL, " ");
-		}
-
-		/* realloc one extra element for the last NULL */
-		res = realloc (res, sizeof (char*) * (n_spaces+1));
-		res[n_spaces] = 0;
-
-		//check if current instruction is a LABEL
-		if (strcmp(res[0],"LABEL") == 0) {
-			printf("Herea\n");
-			//create a mapping for this label
-			label_mapping *curLabel;
-			curLabel = 
-				malloc (sizeof (struct label_mapping_struct));
-			printf("Hereb\n");
-			curLabel->label = res[1];
-			printf("Herec\n");
-			curLabel->value = bucketCounter;
-			printf("Hered\n");
-			if (addLabel (label_hash_table, curLabel) != 0) {
-				printf("Heree\n");
-				free (curLabel->label);
-				free (curLabel);
-			}
-		}
-		printf("Herex\n");
 
 		// allocate memory for command & its fields
 		a_command = malloc(sizeof(command)) ;
@@ -572,20 +471,18 @@ int load_commands (command_table *hashtable, label_table *label_hash_table, char
 		a_command->instruction = malloc( strlen(instruction) + 1 ) ;
 		strcpy (a_command->instruction, instruction) ;
 
-		if (addCommand (hashtable, a_command) != 0) {
+		if (add (hashtable, a_command) != 0) {
 			// if "add" fails, make certain to free this memory!
 			free (a_command->instruction) ;
 			free (a_command) ;
-			printf("Herey\n");
 		}
-		
+
   	}
-  	printf("Herez\n");
 	fclose (theFile);	// not closing a file...leaks memory too!
 	return 0 ;
 }
 
-unsigned int mapCommand (command_table *hashtable, command *cmnd)
+unsigned int map (command_table *hashtable, command *cmnd)
 {	
     int hashval ;
     
@@ -599,79 +496,37 @@ unsigned int mapCommand (command_table *hashtable, command *cmnd)
  	return ((hashval - 1) / 2) % hashtable->num_of_buckets;	// useless if buckets > 26
 }
 
-
-unsigned int mapLabel (label_table *hashtable, label_mapping *label)
-{	
-    int hashval;
-
-
-	if (label != NULL )
-	{
-		hashval = labelCounter ;
-		labelCounter++;
-	}
-	printf("made it to 582\n");
-
- 	// this next line is the actual hash function
- 	return hashval % hashtable->num_of_buckets;
-}
-
-int addCommand (command_table *hashtable, command *cmnd)
+int add (command_table *hashtable, command *cmnd)
 {
 
 	command *tmp_cmnd = NULL ;
     unsigned int bucket ;
 
     /* does command already exist in table? */
-    tmp_cmnd = findCommand(hashtable, cmnd);
-    /*if (tmp_cmnd != NULL) {
-	    // item already exists, don't insert it again. 
+    tmp_cmnd = find(hashtable, cmnd);
+    if (tmp_cmnd != NULL) {
+	    /* item already exists, don't insert it again. */
 		fprintf (stderr, "ERROR, command with instruction = [%s] already in table\n",
 				 cmnd->instruction) ;
 		return 1;
-	}*/
+	}
 
     /* otherwise, insert into appropriate bucket */
-    bucket = mapCommand(hashtable, cmnd) ;			 // map command to hash value
+    bucket = map(hashtable, cmnd) ;			 // map command to hash value
     cmnd->next = hashtable->table[bucket];   // incoming command will be new top of bucket
     hashtable->table[bucket] = cmnd;		 // top of bucket is incoming command
 
 	return 0 ;
 }
 
-int addLabel (label_table *hashtable, label_mapping *label)
-{
-	printf("hereOne\n");
-	label_mapping *tmp_lbl = NULL ;
-    unsigned int bucket ;
-
-    /* does command already exist in table? */
-    tmp_lbl = findLabel(hashtable, label);
-    printf("hereTwo\n");
-    if (tmp_lbl != NULL) {
-    	printf("hereThree\n");
-	    /* item already exists, don't insert it again. */
-		fprintf (stderr, "ERROR, command with instruction = [%s] already in table\n",
-				 label->label) ;
-		return 1;
-	}
-
-    /* otherwise, insert into appropriate bucket */
-    bucket = mapLabel(hashtable, label) ;	   // map command to hash value
-    label->next = hashtable->table[bucket];   // incoming command will be new top of bucket
-    hashtable->table[bucket] = label;		 // top of bucket is incoming command
-
-	return 0 ;
-}
-
-command* findCommand (command_table *hashtable, command *cmnd)
+command* find (command_table *hashtable, command *cmnd)
 {
 
 	command *tmp_cmnd = NULL ;
     unsigned int hashvalue ;
 
 	// find bucket "cmnd" would be in
-    hashvalue = mapCommand(hashtable, cmnd) ;
+    hashvalue = map(hashtable, cmnd) ;
 
 	// traverse linked list in bucket searching for "cmnd"
 	tmp_cmnd = hashtable->table[hashvalue] ;	// get pointer to head pointer of LL
@@ -681,32 +536,6 @@ command* findCommand (command_table *hashtable, command *cmnd)
 		    return tmp_cmnd ;
 		tmp_cmnd = tmp_cmnd->next ;				// advance to next node in the list
 	}
-
-	// if command isn't found, return NULL
-	return NULL ;
-
-}
-
-label_mapping*  findLabel (label_table *hashtable, label_mapping *label) {
-	printf("hereAhh\n");
-	label_mapping *tmp_lbl = NULL ;
-    unsigned int hashvalue ;
-
-	// find bucket "label" would be in
-    hashvalue = mapLabel(hashtable, label) ;
-
-	// traverse linked list in bucket searching for "cmnd"
-	tmp_lbl = hashtable->table[hashvalue] ;	// get pointer to head pointer of LL
-	printf("hereBeeee\n");
-	while (tmp_lbl != NULL) {	
-					// search LL nodes 1 by 1 until we find cmnd
-		printf("hereCeee\n");
-		if (strcmp (tmp_lbl->label, label->label) == 0)
-			printf("hereDee\n");
-		    return tmp_lbl ;
-		tmp_lbl = tmp_lbl->next ;				// advance to next node in the list
-	}
-	printf("hereEee\n");
 
 	// if command isn't found, return NULL
 	return NULL ;
