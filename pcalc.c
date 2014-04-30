@@ -30,6 +30,7 @@ void constInstr (char *reg, char *val, int n_spaces);
 void pushInstr (char *curInt);
 void popInstr(char *destReg);
 void printnumInstr(FILE *outputFile);
+void addInstr();
 
 int main ( int argc, char *argv[] )
 {
@@ -140,6 +141,9 @@ void run_through_commands (command_table *hashtable, FILE *outputFileName) {
 						}
 						else if (strcmp(res[i],"PRINTNUM") == 0) {
 							printnumInstr(outputFileName);
+						}
+						else if (strcmp(res[i],"ADD") == 0) {
+							addInstr();
 						}
 					}
 				}
@@ -298,6 +302,23 @@ void printnumInstr(FILE *outputFile) {
 	printf("%d\n",stackOfInts->value);
 }
 
+void addInstr() {
+	int x;
+	int y;
+	int sum;
+	//check if stack has fewer than 2 ints
+	if (!stackOfInts->next->value) {
+		printf("Error: Add was called, and there are fewer than two ints on the stack\n");
+		exit(0);
+	}
+	x = stackOfInts->value;
+	y = stackOfInts->next->value;
+	sum = x + y;
+	//top of stack is now the sum
+	stackOfInts->value = sum;
+	//skip second element of the stack
+	stackOfInts->next = stackOfInts->next->next;
+}
 
 command_table *create_hash_table(int num_of_buckets) {
 	int i ;
