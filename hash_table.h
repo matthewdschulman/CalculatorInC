@@ -36,4 +36,3 @@ label_mapping*  findLabel (label_table *hashtable, label_mapping *label);
 int            addCommand               (command_table *hashtable, command *prsn) ;
 int addLabel (label_table *hashtable, label_mapping *label);
 void           delete_table      (command_table *hashtable) ;
-void           print_table       (command_table *hashtable) ;
